@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Product {
+  id          String             @id @default(uuid())
+  name        String
+  type        String             // "stencil", "henna", "brush", "other"
+  description String?
+  basePrice   Float
+  imageUrl    String?
+  variations  ProductVariation[]
+  inventory   Inventory?
+  orderItems  OrderItem[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model ProductVariation {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String   // "Wrist", "Fingers", "Feet", etc.
+  sku       String   @unique
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Inventory {
+  id        String   @id @default(uuid())
+  productId String   @unique
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(0)
+  minAlert  Int      @default(5)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id              String   @id @default(uuid())
+  name            String
+  phone           String
+  email           String?
+  instagramHandle String?
+  tiktokHandle    String?
+  source          String   // "tiktok", "instagram", "whatsapp", "referral", "word_of_mouth"
+  deliveryMethod  String   // "pickup", "delivery"
+  deliveryAddress String?
+  notes           String?
+  orders          Order[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  customerId    String
+  customer      Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  transactionId String      @unique
+  channel       String      // "tiktok", "instagram", "whatsapp"
+  items         OrderItem[]
+  totalAmount   Float
+  deliveryFee   Float       @default(0)
+  status        String      @default("completed") // "pending", "completed", "cancelled"
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  category    String   // "transport", "supplier", "delivery", "marketing", "operations", "other"
+  description String
+  amount      Float
+  currency    String   @default("QAR")
+  paymentMethod String // "cash", "transfer", "card"
+  vendor      String?
+  receiptUrl  String?
+  loggedBy    String?  // email of user who logged it
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
